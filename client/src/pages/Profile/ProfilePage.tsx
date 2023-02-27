@@ -9,10 +9,10 @@ import {
 } from '@mui/material'
 import Navbar from '../../components/Navbar/Navbar'
 
-import { useRecoilValue } from 'recoil'
-import { userAtom } from '../../stores'
+import { useRecoilState, useRecoilValue } from 'recoil'
+import { ModalErrorAtom, userAtom } from '../../stores'
 import { ChangeEvent, memo, useEffect, useState } from 'react'
-import { ENDPOINT, STATUS_CODE, PATHS } from '../../constants'
+import { ENDPOINT, STATUS_CODE, PATHS, STYLES } from '../../constants'
 import ToastMessage from '../../components/ToastMessage/ToastMessage'
 import { toast } from 'react-toastify'
 import axios from 'axios'
@@ -25,13 +25,15 @@ const ProfilePage = (): JSX.Element => {
     const navigate = useNavigate()
 
     const { info } = useRecoilValue(userAtom)
+    const [modalErrAtomState, setModalErrAtomState] =
+        useRecoilState(ModalErrorAtom)
 
     const [firstnameInput, setFirstNameInput] = useState<string>('')
     const [lastnameInput, setLastnameInput] = useState<string>('')
     const [emailInput, setEmailInput] = useState<string>('')
     const [usernameInput, setUsernameInput] = useState<string>('')
     const [isEditable, setIsEditable] = useState<boolean>(false)
-
+    const [imageOverSize, setImageOverSize] = useState<boolean>(false)
     const [selectedImage, setSelectedImage] = useState<string>('')
 
     useEffect(() => {
@@ -48,11 +50,18 @@ const ProfilePage = (): JSX.Element => {
 
     const handleChangeProfile = (event: any) => {
         const imgUrl = event.target.files[0]
+        const maxSize = 50000
 
-        const reader = new FileReader()
-        reader.readAsDataURL(imgUrl)
-        reader.onload = () => {
-            setSelectedImage(reader?.result as any)
+        if (imgUrl.size < maxSize) {
+            const reader = new FileReader()
+            reader.readAsDataURL(imgUrl)
+            reader.onload = () => {
+                setSelectedImage(reader?.result as any)
+            }
+
+            setImageOverSize(false)
+        } else {
+            setImageOverSize(true)
         }
     }
 
@@ -69,17 +78,36 @@ const ProfilePage = (): JSX.Element => {
             const res = await axios.put(ENDPOINT.UPDATE_PROFILE, payload)
 
             if (res.status === STATUS_CODE.SUCCESS) {
+                const timeOut = 1500
+
                 toast.success('Update Profile is Successful')
                 setTimeout(() => {
                     navigate(PATHS.HOME)
-                }, 1500)
+                }, timeOut)
             }
 
             setIsEditable(false)
         } catch (error) {
             console.error('error', error)
-            return
+            const errorModal = {
+                isOpen: true,
+                title: 'Error',
+                subtitle: error,
+                submitBtn: 'ok',
+                onSubmit: () => {
+                    setModalErrAtomState({
+                        ...modalErrAtomState,
+                        isOpen: false,
+                    })
+                },
+            }
+            setModalErrAtomState(errorModal as any)
         }
+    }
+
+    const handleCancelEdit = () => {
+        setIsEditable(false)
+        setImageOverSize(false)
     }
 
     const handleFirstnameChange = (
@@ -137,6 +165,19 @@ const ProfilePage = (): JSX.Element => {
                             </Box>
                         )}
                     </Box>
+                    <Typography
+                        textAlign="center"
+                        fontSize={10}
+                        textTransform="uppercase"
+                        color={
+                            imageOverSize
+                                ? STYLES.COLORS.RED
+                                : STYLES.COLORS.GREY
+                        }
+                        m={1}
+                    >
+                        Cover image size should not exceed 50 kb.
+                    </Typography>
                     <Box sx={Styles.inputBox}>
                         <TextField
                             disabled={!isEditable}
@@ -176,12 +217,13 @@ const ProfilePage = (): JSX.Element => {
                                 <Button
                                     color="error"
                                     variant="outlined"
-                                    onClick={() => setIsEditable(false)}
+                                    onClick={handleCancelEdit}
                                     sx={Styles.cancelBtn}
                                 >
                                     cancel
                                 </Button>
                                 <Button
+                                    disabled={imageOverSize}
                                     variant="contained"
                                     onClick={handleSaveProfile}
                                     sx={Styles.saveBtn}
