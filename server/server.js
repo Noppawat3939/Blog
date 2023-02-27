@@ -31,3 +31,5 @@ app.use(userRouter);
 app.listen(process.env.PORT, () => {
   console.log(`👾 Start server port:${process.env.PORT}`);
 });
+
+module.exports = app;
