@@ -33,4 +33,9 @@ export const Styles = {
     container: {
         height: '100vh',
     },
+    noBlogUserInfo: {
+        display: 'flex',
+        alignItems: 'center',
+        columnGap: '10px',
+    },
 }

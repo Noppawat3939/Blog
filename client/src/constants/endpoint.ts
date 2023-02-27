@@ -1,5 +1,4 @@
 const BASE_URL = import.meta.env.VITE_BASE_URL
-// const BASE_URL = 'https://blog-server-phi.vercel.app'
 
 export const ENDPOINT = {
     LOGIN: `${BASE_URL}/api/login`,

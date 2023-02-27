@@ -5,7 +5,7 @@ import { mockBlog } from '../../data'
 import { ENDPOINT, PATHS, STATUS_CODE, STYLES } from '../../constants'
 import { memo, useEffect, useState } from 'react'
 import { useRecoilState, useRecoilValue } from 'recoil'
-import { ModalErrorAtom, userAtom } from '../../stores'
+import { ModalErrorAtom, modalLoadingAtom, userAtom } from '../../stores'
 import { BlogContentState } from '../../types'
 import { formatDate } from '../../helper'
 import Menu from '../../components/Menu/Menu'
@@ -28,6 +28,7 @@ const BlogPage = (): JSX.Element => {
     } = useRecoilValue(userAtom)
     const [modalErrAtomState, setModalErrAtomState] =
         useRecoilState(ModalErrorAtom)
+    const [, setModalLoadingAtomState] = useRecoilState(modalLoadingAtom)
 
     const [blogContent, setBlogContent] = useState<BlogContentState>()
 
@@ -54,6 +55,7 @@ const BlogPage = (): JSX.Element => {
     useEffect(() => {
         ;(async () => {
             try {
+                setModalLoadingAtomState({ isOpen: true })
                 const res = await axios.post(
                     ENDPOINT.GET_BLOG,
                     { id },
@@ -71,6 +73,7 @@ const BlogPage = (): JSX.Element => {
                     )
 
                     setBlogContent(findBlog)
+                    setModalLoadingAtomState({ isOpen: false })
                 }
                 if (res.status === STATUS_CODE.ERR.UNAUTHORIZED) {
                     const errUnauthorized = {
@@ -89,11 +92,12 @@ const BlogPage = (): JSX.Element => {
                         },
                     }
                     setModalErrAtomState(errUnauthorized as any)
+                    setModalLoadingAtomState({ isOpen: false })
                 }
             } catch (error) {
                 console.log('🚀🔥🔥🔥🚀 ==> error', error)
                 handleErrServer()
-                return
+                setModalLoadingAtomState({ isOpen: false })
             }
         })()
     }, [])
@@ -103,12 +107,14 @@ const BlogPage = (): JSX.Element => {
     const handleDeleteBlog = async (id: string) => {
         try {
             const res = await axios.delete(`${ENDPOINT.DELETE_BLOG}/${id}`)
+            setModalLoadingAtomState({ isOpen: true })
 
             if (res.status === STATUS_CODE.DELETE_SUCCESS) {
                 const timeOut = 2000
 
                 toast.success('Delete blog success')
                 setModalErrAtomState({ ...modalErrAtomState, isOpen: false })
+                setModalLoadingAtomState({ isOpen: false })
 
                 setTimeout(() => {
                     navigate(PATHS.HOME)
@@ -117,6 +123,7 @@ const BlogPage = (): JSX.Element => {
         } catch (error) {
             console.log('🚀🔥🔥🔥🚀 ==> error', error)
             handleErrServer()
+            setModalLoadingAtomState({ isOpen: false })
             return
         }
     }
@@ -145,14 +152,14 @@ const BlogPage = (): JSX.Element => {
             onClick: () => {
                 onSelectEditOption()
             },
-            Icon: DeleteIcon,
+            Icon: EditIcon,
         },
         {
             label: 'delete blog',
             onClick: () => {
                 onSelectDeleteOption()
             },
-            Icon: EditIcon,
+            Icon: DeleteIcon,
         },
     ]
 
@@ -218,19 +225,24 @@ const BlogPage = (): JSX.Element => {
                                             {blog.title}
                                         </Typography>
                                         <Box sx={Styles.underHeaderBox}>
-                                            <Avatar src={blog.profile} />
-                                            <Box>
-                                                <Typography
-                                                    sx={Styles.username}
-                                                >
-                                                    by {blog.username}
-                                                </Typography>
-                                                <Typography
-                                                    fontSize={13}
-                                                    color={STYLES.COLORS.GREY}
-                                                >
-                                                    Last updated on Jan 30, 2023
-                                                </Typography>
+                                            <Box sx={Styles.noBlogUserInfo}>
+                                                <Avatar src={blog.profile} />
+                                                <Box>
+                                                    <Typography
+                                                        sx={Styles.username}
+                                                    >
+                                                        by {blog.username}
+                                                    </Typography>
+                                                    <Typography
+                                                        fontSize={13}
+                                                        color={
+                                                            STYLES.COLORS.GREY
+                                                        }
+                                                    >
+                                                        Last updated on Jan 30,
+                                                        2023
+                                                    </Typography>
+                                                </Box>
                                             </Box>
                                         </Box>
                                         <Avatar

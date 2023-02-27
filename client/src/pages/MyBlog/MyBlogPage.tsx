@@ -1,7 +1,7 @@
 import Navbar from '../../components/Navbar/Navbar'
 import { Box, Button, Container, Typography } from '@mui/material'
 import { useRecoilState, useRecoilValue } from 'recoil'
-import { ModalErrorAtom, userAtom } from '../../stores'
+import { ModalErrorAtom, modalLoadingAtom, userAtom } from '../../stores'
 import { ENDPOINT, PATHS, STATUS_CODE } from '../../constants'
 import { memo, useEffect, useState } from 'react'
 import BlogContent from '../../components/BlogContent/BlogContent'
@@ -21,6 +21,9 @@ const MyBlogPage = (): JSX.Element => {
 
     const [modalErrAtomState, setModalErrAtomState] =
         useRecoilState(ModalErrorAtom)
+
+    const [modalLoadingAtomState, setModalLoadingAtomState] =
+        useRecoilState(modalLoadingAtom)
 
     const [blogContent, setBlogContent] = useState([])
 
@@ -46,7 +49,7 @@ const MyBlogPage = (): JSX.Element => {
                     'Content-Type': 'application/json',
                     Authorization: token.access,
                 }
-
+                setModalLoadingAtomState({ isOpen: true })
                 const res = await axios.post(
                     ENDPOINT.GET_BLOG,
                     { id },
@@ -55,10 +58,12 @@ const MyBlogPage = (): JSX.Element => {
 
                 if (res?.status === STATUS_CODE.SUCCESS) {
                     setBlogContent(res.data)
+                    setModalLoadingAtomState({ isOpen: false })
                 }
 
                 if (res.status === STATUS_CODE.NO_DATA) {
                     console.warn(res.statusText)
+                    setModalLoadingAtomState({ isOpen: false })
                 }
             } catch (error) {
                 console.error('🚀🔥🔥🔥🚀 ==> error', error)
@@ -72,6 +77,7 @@ const MyBlogPage = (): JSX.Element => {
                 }
 
                 setModalErrAtomState(errorModal as any)
+                setModalLoadingAtomState({ isOpen: false })
             }
         })()
 
