@@ -41,6 +41,7 @@ const login = async (req, res) => {
 
   try {
     const foundUser = await User.findOne({ username });
+
     const match = bcrypt.compareSync(password, foundUser.password);
 
     if (match) {
@@ -48,11 +49,11 @@ const login = async (req, res) => {
 
       const refreshToken = jwtRefreshTokenGenerate(foundUser);
 
-      res.json({ login: true, token: { accessToken, refreshToken } });
+      return res.json({ login: true, token: { accessToken, refreshToken } });
     }
 
     if (!match) {
-      res.status(401).json({
+      return res.status(401).json({
         login: false,
         message: "Unauthorized",
       });
